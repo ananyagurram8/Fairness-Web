@@ -1,0 +1,88 @@
+# The web app, with /api (and the API docs) proxied to the gateway at ${GATEWAY_URL}
+
+# TLS ends in front of this container (Azure, a load balancer): the scheme the browser used is in
+# X-Forwarded-Proto. Without one, this container is the edge and the request's own scheme applies.
+map $http_x_forwarded_proto $forwarded_proto {
+    ""      $scheme;
+    default $http_x_forwarded_proto;
+}
+
+# HSTS only over HTTPS: an empty value sends no header, so plain-HTTP demos on localhost aren't pinned
+map $forwarded_proto $hsts {
+    https   "max-age=31536000; includeSubDomains";
+    default "";
+}
+
+server {
+    listen 80;
+    server_name _;
+
+    # The client's address. Only a proxy in ${TRUSTED_PROXY} (the load balancer in front, if any) may say who
+    # its client was; anyone else's X-Forwarded-For is ignored. The gateway then gets just this address, so a
+    # client can't dodge the sign-in rate limit or put a false address in the audit log by sending its own.
+    set_real_ip_from ${TRUSTED_PROXY};
+    real_ip_header X-Forwarded-For;
+    real_ip_recursive on;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    server_tokens off;
+
+    # Compress text: the app's scripts and styles, and the gateway's JSON (an analytics snapshot or a page
+    # of alerts shrinks by about 80%). PDFs and spreadsheets are compressed already, so they're left alone.
+    gzip on;
+    gzip_vary on;
+    gzip_proxied any;
+    gzip_comp_level 5;
+    gzip_min_length 1024;
+    gzip_types text/plain text/css application/javascript application/json application/problem+json image/svg+xml;
+
+    # Nginx itself is up (the container healthcheck)
+    location = /healthz {
+        access_log off;
+        return 200 "ok\n";
+    }
+
+    # The gateway sets its own security headers on API responses; only HSTS is added here
+    location /api/ {
+        proxy_pass ${GATEWAY_URL};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto $forwarded_proto;
+        # Reports are built while the request waits
+        proxy_read_timeout 120s;
+        client_max_body_size 1m;
+        add_header Strict-Transport-Security $hsts always;
+    }
+
+    # Swagger UI keeps the gateway's headers: the app's CSP would block its scripts
+    location ~ ^/(swagger-ui|v3/api-docs) {
+        proxy_pass ${GATEWAY_URL};
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto $forwarded_proto;
+        add_header Strict-Transport-Security $hsts always;
+    }
+
+    # Files with fixed names can change in a release, so browsers check them each time
+    location ~ ^/(theme-boot\.js|favicon\.ico)$ {
+        add_header Cache-Control "no-cache" always;
+        include /etc/nginx/snippets/security-headers.conf;
+        try_files $uri =404;
+    }
+
+    # Built files carry a content hash in their names: cache them for good
+    location ~* \.(?:js|css|woff2?|ttf|svg|png|ico)$ {
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+        include /etc/nginx/snippets/security-headers.conf;
+        try_files $uri =404;
+    }
+
+    # Every other path is a page of the app: index.html, never cached so a new release shows at once
+    location / {
+        add_header Cache-Control "no-cache" always;
+        include /etc/nginx/snippets/security-headers.conf;
+        try_files $uri $uri/ /index.html;
+    }
+}

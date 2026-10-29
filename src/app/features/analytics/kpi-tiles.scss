@@ -1,0 +1,94 @@
+:host {
+  display: block;
+}
+
+// A ruled grid: one border between tiles, none doubled
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 12px 14px 10px;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+
+  &.crit {
+    background: var(--crit-bg);
+
+    .value {
+      color: var(--crit-ink);
+    }
+  }
+
+  &.warn {
+    background: var(--warn-bg);
+  }
+}
+
+.label {
+  min-height: 2.6em;
+  font: 500 10px/1.3 var(--font-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.value {
+  font: 500 24px/1 var(--font-mono);
+  letter-spacing: -0.03em;
+  color: var(--fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.change {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font: 600 11px var(--font-mono);
+  color: var(--muted);
+
+  mat-icon {
+    width: 12px;
+    height: 12px;
+  }
+
+  &.good {
+    color: var(--ok);
+  }
+
+  &.bad {
+    color: var(--crit);
+  }
+}
+
+.note {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+app-sparkline {
+  margin-top: auto;
+  padding-top: 4px;
+}
+
+.compared {
+  margin: 6px 0 0;
+  font: 10.5px var(--font-mono);
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}

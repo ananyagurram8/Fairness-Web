@@ -1,0 +1,58 @@
+<main class="auth-page">
+  <div class="auth-split">
+    <section class="intro" aria-labelledby="intro-heading">
+      <span class="brand"
+        ><span aria-hidden="true">[</span> Fairness <span aria-hidden="true">]</span></span
+      >
+      <h2 id="intro-heading">Who carries the pager, and is it <em>fair</em>?</h2>
+      <pre aria-label="What Fairness tracks">
+<span class="prompt">&gt;</span> fairness --about
+alert load per engineer ..... <b>shared fairly?</b>
+night and weekend pages ..... <b>counted</b>
+burnout risk ................ <b>scored 0–100</b>
+reports ..................... <b>PDF and Excel</b></pre>
+    </section>
+
+    <section class="form-side">
+      <span class="eyebrow bracket">Sign in</span>
+      <h1>Welcome back</h1>
+
+      @if (notice(); as notice) {
+        <p class="notice" role="status">{{ notice }}</p>
+      }
+
+      <form novalidate (submit)="signIn($event)">
+        <mat-form-field appearance="outline">
+          <mat-label>Email</mat-label>
+          <mat-icon matIconPrefix svgIcon="user" />
+          <input matInput type="email" autocomplete="username" [formField]="loginForm.email" />
+          @if (firstError(loginForm.email); as message) {
+            <mat-error>{{ message }}</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Password</mat-label>
+          <mat-icon matIconPrefix svgIcon="lock" />
+          <input
+            matInput
+            type="password"
+            autocomplete="current-password"
+            [formField]="loginForm.password"
+          />
+          @if (firstError(loginForm.password); as message) {
+            <mat-error>{{ message }}</mat-error>
+          }
+        </mat-form-field>
+
+        @if (formError(); as message) {
+          <p class="form-error" role="alert">{{ message }}</p>
+        }
+
+        <button matButton="filled" type="submit" [disabled]="loginForm().submitting()">
+          {{ loginForm().submitting() ? 'Signing in…' : 'Sign in' }}
+        </button>
+      </form>
+    </section>
+  </div>
+</main>
